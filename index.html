@@ -125,8 +125,7 @@ const baseNoteFrequencies = {
   'C8': 4186.01
 };
 
-function playNote(note, volume = 1.0) {
-  const fullNote = `${note}${currentOctave}`;
+function playNote(fullNote, volume = 1.0) {
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
@@ -152,22 +151,37 @@ function stopNote(noteObj) {
   oscillator.stop(audioContext.currentTime + instruments[currentInstrument].release);
 }
 
+function updateKeyboardOctaves() {
+  let whiteOctave = currentOctave;
+  document.querySelectorAll('.white-key').forEach((key, index) => {
+    if (key.dataset.note === 'C' && index !== 0) whiteOctave++;
+    key.dataset.fullNote = `${key.dataset.note}${whiteOctave}`;
+    key.setAttribute('aria-label', `${key.dataset.fullNote} key`);
+  });
+
+  let blackOctave = currentOctave;
+  document.querySelectorAll('.black-key').forEach((key, index) => {
+    if (key.dataset.note === 'C#' && index !== 0) blackOctave++;
+    key.dataset.fullNote = `${key.dataset.note}${blackOctave}`;
+    key.setAttribute('aria-label', `${key.dataset.fullNote} key`);
+  });
+}
+
 document.querySelectorAll('.white-key, .black-key').forEach(key => {
   // Make keys accessible
   key.setAttribute('role', 'button');
   key.setAttribute('tabindex', '0');
-  key.setAttribute('aria-label', `${key.dataset.note} key`);
 
   const startNoteHandler = () => {
     if (key.classList.contains('active')) return;
-    const note = key.dataset.note;
+    const fullNote = key.dataset.fullNote;
     key.classList.add('active');
-    const noteObj = playNote(note);
+    const noteObj = playNote(fullNote);
     key.noteObj = noteObj;
     
     if (isRecording) {
       const time = audioContext.currentTime - recordStartTime;
-      recordedNotes.push({ note: `${note}${currentOctave}`, time, duration: 0, volume: 1.0, type: 'main' });
+      recordedNotes.push({ note: fullNote, time, duration: 0, volume: 1.0, type: 'main' });
     }
   };
 
@@ -212,6 +226,7 @@ document.getElementById('instrument-select').addEventListener('change', (e) => {
 
 document.getElementById('octave-select').addEventListener('change', (e) => {
   currentOctave = parseInt(e.target.value);
+  updateKeyboardOctaves();
 });
 
 document.getElementById('volume-slider').addEventListener('input', (e) => {
@@ -271,14 +286,14 @@ function playNextNote() {
   }
   
   const { note, time, duration, volume, type } = midiSequence[currentNoteIndex];
-  const noteObj = playNote(note.slice(0, -1), volume);
+  const noteObj = playNote(note, volume);
   
-  highlightKey(note.slice(0, -1));
+  highlightKey(note);
   highlightMidiLine(currentNoteIndex);
   
   setTimeout(() => {
     stopNote(noteObj);
-    unhighlightKey(note.slice(0, -1));
+    unhighlightKey(note);
   }, duration * 1000);
   
   currentNoteIndex++;
@@ -287,13 +302,13 @@ function playNextNote() {
   setTimeout(playNextNote, nextNoteTime);
 }
 
-function highlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+function highlightKey(fullNote) {
+  const key = document.querySelector(`[data-full-note="${fullNote}"]`);
   if (key) key.classList.add('highlight');
 }
 
-function unhighlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+function unhighlightKey(fullNote) {
+  const key = document.querySelector(`[data-full-note="${fullNote}"]`);
   if (key) key.classList.remove('highlight');
 }
 
@@ -404,6 +419,7 @@ function shuffleArray(array) {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
+  updateKeyboardOctaves();
   // Set initial volume
   const volumeSlider = document.getElementById('volume-slider');
   masterGainNode.gain.setValueAtTime(volumeSlider.value / 100, audioContext.currentTime);
