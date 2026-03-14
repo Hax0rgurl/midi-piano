@@ -96,6 +96,7 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let currentInstrument = 'piano';
 let currentOctave = 4;
 let midiSequence = null;
+const pianoKeysCache = {};
 let isPlaying = false;
 let currentNoteIndex = 0;
 let startTime = 0;
@@ -153,6 +154,11 @@ function stopNote(noteObj) {
 }
 
 document.querySelectorAll('.white-key, .black-key').forEach(key => {
+  // Cache the key element (only the first one for each note to match querySelector behavior)
+  if (key.dataset.note && !pianoKeysCache[key.dataset.note]) {
+    pianoKeysCache[key.dataset.note] = key;
+  }
+
   // Make keys accessible
   key.setAttribute('role', 'button');
   key.setAttribute('tabindex', '0');
@@ -288,12 +294,12 @@ function playNextNote() {
 }
 
 function highlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = pianoKeysCache[note];
   if (key) key.classList.add('highlight');
 }
 
 function unhighlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = pianoKeysCache[note];
   if (key) key.classList.remove('highlight');
 }
 
