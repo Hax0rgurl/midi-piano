@@ -152,8 +152,10 @@ function stopNote(noteObj) {
   oscillator.stop(audioContext.currentTime + instruments[currentInstrument].release);
 }
 
+const pianoKeysCache = {};
 document.querySelectorAll('.white-key, .black-key').forEach(key => {
   // Make keys accessible
+  if (!pianoKeysCache[key.dataset.note]) pianoKeysCache[key.dataset.note] = key;
   key.setAttribute('role', 'button');
   key.setAttribute('tabindex', '0');
   key.setAttribute('aria-label', `${key.dataset.note} key`);
@@ -288,12 +290,12 @@ function playNextNote() {
 }
 
 function highlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = pianoKeysCache[note];
   if (key) key.classList.add('highlight');
 }
 
 function unhighlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = pianoKeysCache[note];
   if (key) key.classList.remove('highlight');
 }
 
