@@ -65,6 +65,7 @@
       </select>
       <button id="record">Record</button>
       <button id="download-midi">Download MIDI File</button>
+      <button id="download-wav">Download WAV File</button>
       <div id="volume-control">
         <input type="range" id="volume-slider" min="0" max="100" value="50">
         <span id="volume-label">Volume: 50%</span>
@@ -244,7 +245,7 @@ function displayRecordedNotes() {
 }
 
 function parseMidiText(midiText) {
-  return midiText.trim().split('\n').map(line => {
+  return midiText.trim().split('\n').filter(line => line.trim() !== '').map(line => {
     const [note, time, duration, volume, type] = line.split(',');
     return { note, time: parseFloat(time), duration: parseFloat(duration), volume: parseFloat(volume), type };
   });
@@ -333,6 +334,103 @@ document.getElementById('download-midi').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+
+document.getElementById('download-wav').addEventListener('click', async () => {
+  const statusElement = document.getElementById('status');
+  const midiText = document.getElementById('midi-text').value;
+  if (!midiText || midiText.trim() === '' || midiText.trim() === 'MIDI File Content:') {
+    statusElement.textContent = 'No MIDI sequence to render.';
+    return;
+  }
+
+  const seq = parseMidiText(midiText);
+  if (seq.length === 0) {
+    statusElement.textContent = 'No MIDI sequence to render.';
+    return;
+  }
+
+  statusElement.textContent = 'Rendering WAV file...';
+
+  // Find maximum time in the sequence
+  let maxTime = 0;
+  for (const note of seq) {
+    if (!note || isNaN(note.time) || isNaN(note.duration)) continue;
+    const noteEndTime = note.time + note.duration + 2.0; // Adding decay/release tail buffer
+    if (noteEndTime > maxTime) {
+      maxTime = noteEndTime;
+    }
+  }
+
+  // Limit to reasonable max time to prevent browser crash (e.g., 5 minutes)
+  if (maxTime > 300) maxTime = 300;
+  if (maxTime <= 0) {
+    statusElement.textContent = 'Invalid MIDI sequence length.';
+    return;
+  }
+
+  const sampleRate = audioContext.sampleRate || 44100;
+  const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(sampleRate * maxTime), sampleRate);
+
+  // Setup offline master gain
+  const offlineMasterGain = offlineCtx.createGain();
+  const volumeSlider = document.getElementById('volume-slider');
+  offlineMasterGain.gain.value = volumeSlider.value / 100;
+  offlineMasterGain.connect(offlineCtx.destination);
+
+  // Schedule notes
+  for (const { note, time, duration, volume } of seq) {
+    const cleanNote = note.replace(/[0-9]/g, ''); // Extract just note letter/accidental
+    const octaveStr = note.match(/[0-9]/);
+    const octave = octaveStr ? parseInt(octaveStr[0]) : currentOctave;
+    const fullNote = `${cleanNote}${octave}`;
+
+    if (!baseNoteFrequencies[fullNote]) continue;
+
+    const oscillator = offlineCtx.createOscillator();
+    const gainNode = offlineCtx.createGain();
+
+    oscillator.type = instruments[currentInstrument].type;
+    oscillator.frequency.setValueAtTime(baseNoteFrequencies[fullNote] || 440, time);
+
+    // Envelope
+    gainNode.gain.setValueAtTime(0, time);
+    gainNode.gain.linearRampToValueAtTime(volume, time + instruments[currentInstrument].attack);
+    gainNode.gain.linearRampToValueAtTime(instruments[currentInstrument].sustain * volume, time + instruments[currentInstrument].attack + instruments[currentInstrument].decay);
+
+    // Release
+    const endTime = time + duration;
+    // Important: we must calculate the value at endTime to properly release from there,
+    // but a simple approach is just ramp to 0
+    gainNode.gain.setValueAtTime(instruments[currentInstrument].sustain * volume, endTime);
+    gainNode.gain.linearRampToValueAtTime(0, endTime + instruments[currentInstrument].release);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(offlineMasterGain);
+
+    oscillator.start(time);
+    oscillator.stop(endTime + instruments[currentInstrument].release);
+  }
+
+  try {
+    const renderedBuffer = await offlineCtx.startRendering();
+    const wavBuffer = audioBufferToWav(renderedBuffer);
+    const blob = new Blob([new DataView(wavBuffer)], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'generated_audio.wav';
+    downloadLink.click();
+
+    URL.revokeObjectURL(url);
+    statusElement.textContent = 'WAV file downloaded!';
+  } catch (e) {
+    console.error(e);
+    statusElement.textContent = 'Error rendering WAV file.';
+  }
+});
+
+
 document.getElementById('generate-midi').addEventListener('click', () => {
   const midiInput = document.getElementById('midi-input').value;
   const statusElement = document.getElementById('status');
@@ -400,6 +498,101 @@ function shuffleArray(array) {
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
+}
+
+
+function audioBufferToWav(buffer, opt) {
+  opt = opt || {};
+
+  var numChannels = buffer.numberOfChannels;
+  var sampleRate = buffer.sampleRate;
+  var format = opt.float32 ? 3 : 1;
+  var bitDepth = format === 3 ? 32 : 16;
+
+  var result;
+  if (numChannels === 2) {
+    result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+  } else {
+    result = buffer.getChannelData(0);
+  }
+
+  return encodeWAV(result, format, sampleRate, numChannels, bitDepth);
+}
+
+function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
+  var bytesPerSample = bitDepth / 8;
+  var blockAlign = numChannels * bytesPerSample;
+
+  var buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+  var view = new DataView(buffer);
+
+  /* RIFF identifier */
+  writeString(view, 0, 'RIFF');
+  /* RIFF chunk length */
+  view.setUint32(4, 36 + samples.length * bytesPerSample, true);
+  /* RIFF type */
+  writeString(view, 8, 'WAVE');
+  /* format chunk identifier */
+  writeString(view, 12, 'fmt ');
+  /* format chunk length */
+  view.setUint32(16, 16, true);
+  /* sample format (raw) */
+  view.setUint16(20, format, true);
+  /* channel count */
+  view.setUint16(22, numChannels, true);
+  /* sample rate */
+  view.setUint32(24, sampleRate, true);
+  /* byte rate (sample rate * block align) */
+  view.setUint32(28, sampleRate * blockAlign, true);
+  /* block align (channel count * bytes per sample) */
+  view.setUint16(32, blockAlign, true);
+  /* bits per sample */
+  view.setUint16(34, bitDepth, true);
+  /* data chunk identifier */
+  writeString(view, 36, 'data');
+  /* data chunk length */
+  view.setUint32(40, samples.length * bytesPerSample, true);
+  if (format === 1) { // Raw PCM
+    floatTo16BitPCM(view, 44, samples);
+  } else {
+    writeFloat32(view, 44, samples);
+  }
+
+  return buffer;
+}
+
+function interleave(inputL, inputR) {
+  var length = inputL.length + inputR.length;
+  var result = new Float32Array(length);
+
+  var index = 0,
+    inputIndex = 0;
+
+  while (index < length) {
+    result[index++] = inputL[inputIndex];
+    result[index++] = inputR[inputIndex];
+    inputIndex++;
+  }
+  return result;
+}
+
+function writeFloat32(output, offset, input) {
+  for (var i = 0; i < input.length; i++, offset += 4) {
+    output.setFloat32(offset, input[i], true);
+  }
+}
+
+function floatTo16BitPCM(output, offset, input) {
+  for (var i = 0; i < input.length; i++, offset += 2) {
+    var s = Math.max(-1, Math.min(1, input[i]));
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+}
+
+function writeString(view, offset, string) {
+  for (var i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
 }
 
 // Initialize the application
