@@ -318,17 +318,12 @@ document.getElementById('download-midi').addEventListener('click', () => {
   const blob = new Blob([midiText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   
-  // Open a new window with the MIDI content
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + midiText + '</pre>');
-  newWindow.document.title = 'Generated MIDI';
-  
-  // Create a download link in the new window
-  const downloadLink = newWindow.document.createElement('a');
-  downloadLink.href = url;
-  downloadLink.download = 'generated_midi.mid';
-  downloadLink.textContent = 'Download MIDI File';
-  newWindow.document.body.appendChild(downloadLink);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'generated_midi.mid';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   
   URL.revokeObjectURL(url);
 });
