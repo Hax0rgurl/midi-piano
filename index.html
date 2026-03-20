@@ -1,4 +1,4 @@
-<html><head><base href="https://musicworld.websim/"><title>AI MIDI Generator with Chords - MusicWorld</title><style>body{background:#000000;color:#00ff00;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;font-family:'Roboto',sans-serif;padding:20px}.container{width:100%;max-width:1200px}.piano{background:#111111;padding:20px;border-radius:15px;box-shadow:0 10px 30px rgba(0,255,0,0.3);margin-bottom:30px;overflow-x:auto}.keys{display:flex;position:relative;width:4400px}.white-key{width:50px;height:180px;background:#222222;border:1px solid #00ff00;border-radius:0 0 8px 8px;cursor:pointer;transition:all 0.3s ease}.black-key{width:30px;height:110px;background:#000000;position:absolute;cursor:pointer;z-index:1;border-radius:0 0 5px 5px;transition:all 0.3s ease;border:1px solid #00ff00}.white-key:active,.black-key:active,.white-key.active,.black-key.active{transform:scale(0.98);box-shadow:0 2px 10px rgba(0,255,0,0.5)}.white-key:active,.white-key.active{background:#00ff00}.black-key:active,.black-key.active{background:#00ff00}.controls{background:rgba(0,0,0,0.8);padding:20px;border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);margin-bottom:30px;backdrop-filter:blur(10px);border:1px solid #00ff00}select,button,input,textarea{background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px 15px;font-size:16px;margin:5px;border-radius:8px;transition:all 0.3s ease}select:focus,input:focus,textarea:focus{outline:none;box-shadow:0 0 0 2px #00ff00}button{background:#000000;color:#00ff00;font-weight:bold;cursor:pointer;transition:all 0.3s ease}button:hover{background:#003300;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,255,0,0.4)}#status{margin-top:15px;font-style:italic;color:#00ff00}#midi-container{background:rgba(0,0,0,0.8);border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);padding:20px;backdrop-filter:blur(10px);border:1px solid #00ff00}#midi-input{width:calc(100% - 30px);margin-bottom:15px;background:#000000;color:#00ff00;resize:vertical}#playback-controls{display:flex;justify-content:space-between;margin-top:15px}#midi-text{width:100%;height:200px;margin-top:20px;resize:vertical;font-family:'Courier New',monospace;background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px;border-radius:8px}.recording{background-color:#ff0000 !important;color:#000000 !important}#volume-control{display:flex;align-items:center;margin-top:10px}#volume-slider{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#00ff00;outline:none;opacity:0.7;transition:opacity .2s}#volume-slider:hover{opacity:1}#volume-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-label{margin-left:10px;font-size:14px}.highlight{background-color:rgba(0,255,0,0.5) !important}.midi-line-highlight{background-color:#003300}.white-key:focus-visible,.black-key:focus-visible{outline:2px solid #ffffff;outline-offset:-2px;z-index:10}</style></head><body>
+<html><head><base href="https://musicworld.websim/"><title>AI MIDI Generator with Chords - MusicWorld</title><style>body{background:#000000;color:#00ff00;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;font-family:'Roboto',sans-serif;padding:20px}.container{width:100%;max-width:1200px}.piano{background:#111111;padding:20px;border-radius:15px;box-shadow:0 10px 30px rgba(0,255,0,0.3);margin-bottom:30px;overflow-x:auto}.keys{display:flex;position:relative;width:4400px}.white-key{width:50px;height:180px;background:#222222;border:1px solid #00ff00;border-radius:0 0 8px 8px;cursor:pointer;transition:all 0.3s ease}.black-key{width:30px;height:110px;background:#000000;position:absolute;cursor:pointer;z-index:1;border-radius:0 0 5px 5px;transition:all 0.3s ease;border:1px solid #00ff00}.white-key:active,.black-key:active,.white-key.active,.black-key.active{transform:scale(0.98);box-shadow:0 2px 10px rgba(0,255,0,0.5)}.white-key:active,.white-key.active{background:#00ff00}.black-key:active,.black-key.active{background:#00ff00}.controls{background:rgba(0,0,0,0.8);padding:20px;border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);margin-bottom:30px;backdrop-filter:blur(10px);border:1px solid #00ff00}select,button,input,textarea{background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px 15px;font-size:16px;margin:5px;border-radius:8px;transition:all 0.3s ease}select:focus,input:focus,textarea:focus{outline:none;box-shadow:0 0 0 2px #00ff00}button{background:#000000;color:#00ff00;font-weight:bold;cursor:pointer;transition:all 0.3s ease}button:hover{background:#003300;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,255,0,0.4)}#status{margin-top:15px;font-style:italic;color:#00ff00}#midi-container{background:rgba(0,0,0,0.8);border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);padding:20px;backdrop-filter:blur(10px);border:1px solid #00ff00}#midi-input{width:calc(100% - 30px);margin-bottom:15px;background:#000000;color:#00ff00;resize:vertical}#playback-controls{display:flex;justify-content:space-between;margin-top:15px}#midi-text{white-space:pre-wrap;overflow-y:auto;overflow-x:hidden;width:100%;height:200px;margin-top:20px;resize:vertical;font-family:'Courier New',monospace;background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px;border-radius:8px}.recording{background-color:#ff0000 !important;color:#000000 !important}#volume-control{display:flex;align-items:center;margin-top:10px}#volume-slider{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#00ff00;outline:none;opacity:0.7;transition:opacity .2s}#volume-slider:hover{opacity:1}#volume-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-label{margin-left:10px;font-size:14px}.highlight{background-color:rgba(0,255,0,0.5) !important}.midi-line-highlight{background-color:#003300}.white-key:focus-visible,.black-key:focus-visible{outline:2px solid #ffffff;outline-offset:-2px;z-index:10}</style></head><body>
   <div class="container">
     <div class="piano">
   <div class="keys">
@@ -79,11 +79,11 @@
         <button id="play">Play on Piano</button>
         <button id="stop">Stop</button>
       </div>
-      <textarea id="midi-text" readonly="" placeholder="MIDI text will appear here after generation or recording">
+      <div id="midi-text" placeholder="MIDI text will appear here after generation or recording">
      MIDI File Content:
 
 
-</textarea>
+</div>
     </div>
   </div>
 
@@ -240,7 +240,7 @@ function displayRecordedNotes() {
   recordedNotes.forEach(note => {
     midiText += `${note.note},${note.time.toFixed(2)},${note.duration.toFixed(2)},${note.volume.toFixed(1)},${note.type}\n`;
   });
-  document.getElementById('midi-text').value = midiText;
+  const mt = document.getElementById('midi-text'); mt.textContent = midiText; mt.dataset.domInitialized = '';
 }
 
 function parseMidiText(midiText) {
@@ -252,7 +252,7 @@ function parseMidiText(midiText) {
 
 document.getElementById('play').addEventListener('click', () => {
   if (!midiSequence) {
-    const midiText = document.getElementById('midi-text').value;
+    const midiText = document.getElementById('midi-text').textContent;
     midiSequence = parseMidiText(midiText);
   }
   
@@ -299,11 +299,33 @@ function unhighlightKey(note) {
 
 function highlightMidiLine(index) {
   const midiTextArea = document.getElementById('midi-text');
-  const lines = midiTextArea.value.split('\n');
-  const highlightedLines = lines.map((line, i) => 
-    i === index ? `<span class="midi-line-highlight">${line}</span>` : line
-  );
-  midiTextArea.innerHTML = highlightedLines.join('\n');
+
+  if (!midiTextArea.dataset.domInitialized) {
+    const textContent = midiTextArea.textContent;
+    const lines = textContent.split('\n');
+    midiTextArea.innerHTML = '';
+    midiTextArea.lineSpans = [];
+    lines.forEach((line, i) => {
+      const span = document.createElement('span');
+      span.textContent = line;
+      midiTextArea.appendChild(span);
+      if (i < lines.length - 1) {
+        midiTextArea.appendChild(document.createTextNode('\n'));
+      }
+      midiTextArea.lineSpans.push(span);
+    });
+    midiTextArea.dataset.domInitialized = "true";
+  }
+
+  if (midiTextArea.lastHighlightedSpan) {
+    midiTextArea.lastHighlightedSpan.classList.remove('midi-line-highlight');
+  }
+
+  const span = midiTextArea.lineSpans[index];
+  if (span) {
+    span.classList.add('midi-line-highlight');
+    midiTextArea.lastHighlightedSpan = span;
+  }
 }
 
 document.getElementById('stop').addEventListener('click', () => {
@@ -314,7 +336,7 @@ document.getElementById('stop').addEventListener('click', () => {
 });
 
 document.getElementById('download-midi').addEventListener('click', () => {
-  const midiText = document.getElementById('midi-text').value;
+  const midiText = document.getElementById('midi-text').textContent;
   const blob = new Blob([midiText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   
@@ -344,7 +366,7 @@ document.getElementById('generate-midi').addEventListener('click', () => {
     // This is a placeholder for the actual song generation
     const generatedSong = generateFullSong();
     
-    document.getElementById('midi-text').value = generatedSong;
+    const mt = document.getElementById('midi-text'); mt.textContent = generatedSong; mt.dataset.domInitialized = '';
     midiSequence = parseMidiText(generatedSong);
     statusElement.textContent = 'Full song generated successfully!';
   }, 3000); // Simulating a 3-second delay for generation
