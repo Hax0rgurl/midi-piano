@@ -65,6 +65,7 @@
       </select>
       <button id="record">Record</button>
       <button id="download-midi">Download MIDI File</button>
+      <button id="download-wav">Download WAV File</button>
       <div id="volume-control">
         <input type="range" id="volume-slider" min="0" max="100" value="50">
         <span id="volume-label">Volume: 50%</span>
@@ -314,6 +315,174 @@ document.getElementById('stop').addEventListener('click', () => {
 });
 
 document.getElementById('download-midi').addEventListener('click', () => {
+document.getElementById('download-wav').addEventListener('click', async () => {
+  const midiText = document.getElementById('midi-text').value;
+  let cleanedText = midiText.replace(/^[ \t]*MIDI File Content:[ \t]*\n*/i, '');
+  if (!cleanedText.trim()) {
+    alert('No MIDI content to download.');
+    return;
+  }
+
+  let sequence;
+  try {
+    sequence = cleanedText.trim().split('\n').map(line => {
+      const parts = line.split(',');
+      if (parts.length < 5) throw new Error('Invalid format');
+      const [note, time, duration, volume, type] = parts;
+      return { note, time: parseFloat(time), duration: parseFloat(duration), volume: parseFloat(volume), type };
+    }).filter(n => !isNaN(n.time) && !isNaN(n.duration));
+  } catch(e) {
+    alert('Failed to parse MIDI content.');
+    return;
+  }
+
+  if (sequence.length === 0) {
+    alert('No valid notes found.');
+    return;
+  }
+
+  const totalDuration = sequence.reduce((max, note) => Math.max(max, note.time + note.duration), 0);
+  const padding = 1.0;
+  const lengthInSeconds = totalDuration + padding;
+
+  const sampleRate = 44100;
+  const offlineContext = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, sampleRate * lengthInSeconds, sampleRate);
+
+  const masterGain = offlineContext.createGain();
+  const volumeSlider = document.getElementById('volume-slider');
+  masterGain.gain.value = volumeSlider ? volumeSlider.value / 100 : 0.5;
+  masterGain.connect(offlineContext.destination);
+
+  const instParams = instruments[currentInstrument];
+
+  sequence.forEach(note => {
+    const fullNote = note.note;
+    if (!baseNoteFrequencies[fullNote]) return;
+
+    const oscillator = offlineContext.createOscillator();
+    const gainNode = offlineContext.createGain();
+
+    oscillator.type = instParams.type;
+    oscillator.frequency.value = baseNoteFrequencies[fullNote];
+
+    const startTime = note.time;
+    const endTime = startTime + note.duration;
+    const release = instParams.release;
+
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(note.volume, startTime + instParams.attack);
+    gainNode.gain.linearRampToValueAtTime(instParams.sustain * note.volume, startTime + instParams.attack + instParams.decay);
+
+    gainNode.gain.setValueAtTime(gainNode.gain.value, endTime);
+    gainNode.gain.linearRampToValueAtTime(0, endTime + release);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(masterGain);
+
+    oscillator.start(startTime);
+    oscillator.stop(endTime + release);
+  });
+
+  document.getElementById('status').textContent = 'Rendering WAV...';
+
+  try {
+    const renderedBuffer = await offlineContext.startRendering();
+    const wavBlob = audioBufferToWav(renderedBuffer);
+    const url = URL.createObjectURL(wavBlob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'generated_audio.wav';
+    downloadLink.style.display = 'none';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+
+    setTimeout(() => {
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+    }, 100);
+
+    document.getElementById('status').textContent = 'WAV download complete!';
+  } catch (err) {
+    console.error(err);
+    document.getElementById('status').textContent = 'Error rendering WAV.';
+  }
+});
+
+function audioBufferToWav(buffer, opt) {
+  opt = opt || {};
+
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = opt.float32 ? 3 : 1;
+  const bitDepth = format === 3 ? 32 : 16;
+
+  let result;
+  if (numChannels === 2) {
+    result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+  } else {
+    result = buffer.getChannelData(0);
+  }
+
+  return encodeWAV(result, format, sampleRate, numChannels, bitDepth);
+}
+
+function interleave(inputL, inputR) {
+  const length = inputL.length + inputR.length;
+  const result = new Float32Array(length);
+
+  let index = 0, inputIndex = 0;
+
+  while (index < length) {
+    result[index++] = inputL[inputIndex];
+    result[index++] = inputR[inputIndex];
+    inputIndex++;
+  }
+  return result;
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+
+  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+  const view = new DataView(buffer);
+
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * bytesPerSample, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, samples.length * bytesPerSample, true);
+
+  if (format === 1) {
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+  } else {
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++, offset += 4) {
+      view.setFloat32(offset, samples[i], true);
+    }
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
   const midiText = document.getElementById('midi-text').value;
   const blob = new Blob([midiText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
