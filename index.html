@@ -270,7 +270,7 @@ function playNextNote() {
     return;
   }
   
-  const { note, time, duration, volume, type } = midiSequence[currentNoteIndex];
+  const { note, time, duration, volume } = midiSequence[currentNoteIndex];
   const noteObj = playNote(note.slice(0, -1), volume);
   
   highlightKey(note.slice(0, -1));
