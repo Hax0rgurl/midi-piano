@@ -65,6 +65,7 @@
       </select>
       <button id="record">Record</button>
       <button id="download-midi">Download MIDI File</button>
+      <button id="download-wav">Download WAV File</button>
       <div id="volume-control">
         <input type="range" id="volume-slider" min="0" max="100" value="50">
         <span id="volume-label">Volume: 50%</span>
@@ -313,7 +314,142 @@ document.getElementById('stop').addEventListener('click', () => {
   });
 });
 
+
+function audioBufferToWav(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+
+  const result = new Float32Array(buffer.length * numChannels);
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < buffer.length; i++) {
+      result[i * numChannels + channel] = channelData[i];
+    }
+  }
+
+  const dataLength = result.length * (bitDepth / 8);
+  const bufferLength = 44 + dataLength;
+  const arrayBuffer = new ArrayBuffer(bufferLength);
+  const view = new DataView(arrayBuffer);
+
+  const writeString = (view, offset, string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+  view.setUint16(32, numChannels * (bitDepth / 8), true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+
+  for (let i = 0; i < result.length; i++) {
+    let s = Math.max(-1, Math.min(1, result[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+document.getElementById('download-wav').addEventListener('click', async () => {
+  const midiText = document.getElementById('midi-text').value;
+  if (!midiText || !midiText.trim()) {
+    alert("No MIDI data to download!");
+    return;
+  }
+
+  const statusElement = document.getElementById('status');
+  statusElement.textContent = 'Rendering audio...';
+
+  const sequence = parseMidiText(midiText);
+  if (sequence.length === 0) {
+    statusElement.textContent = '';
+    return;
+  }
+
+  let totalDuration = 0;
+  sequence.forEach(note => {
+    const noteEnd = note.time + note.duration;
+    if (noteEnd > totalDuration) totalDuration = noteEnd;
+  });
+
+  // Adding release time to final duration to ensure tail isn't cut
+  totalDuration += instruments[currentInstrument].release + 1.0;
+
+  const sampleRate = audioContext.sampleRate;
+  const offlineCtx = new OfflineAudioContext(2, sampleRate * totalDuration, sampleRate);
+
+  const offlineMasterGain = offlineCtx.createGain();
+  const volumeSlider = document.getElementById('volume-slider');
+  offlineMasterGain.gain.value = volumeSlider.value / 100;
+  offlineMasterGain.connect(offlineCtx.destination);
+
+  // Re-create the play logic inside the offline context
+  sequence.forEach(({ note, time, duration, volume, type }) => {
+    // Note here includes the octave
+    const oscillator = offlineCtx.createOscillator();
+    const gainNode = offlineCtx.createGain();
+
+    oscillator.type = instruments[currentInstrument].type;
+
+    const freq = baseNoteFrequencies[note] || baseNoteFrequencies[`${note.slice(0, -1)}${currentOctave}`];
+    if (!freq) return;
+
+    oscillator.frequency.setValueAtTime(freq, time);
+
+    const inst = instruments[currentInstrument];
+
+    gainNode.gain.setValueAtTime(0, time);
+    gainNode.gain.linearRampToValueAtTime(volume, time + inst.attack);
+    gainNode.gain.linearRampToValueAtTime(inst.sustain * volume, time + inst.attack + inst.decay);
+
+    // Stop note logic
+    const stopTime = time + duration;
+    // Calculate what the gain will be at stopTime, typically it's sustain * volume if duration > attack + decay
+    // To be safe, we just set the value at the stop time to current expected value, then release.
+    // In standard Web Audio we use cancelAndHoldAtTime or setTargetAtTime, but here we can just use linearRampToValueAtTime
+    // assuming it holds at sustain until stopTime.
+    gainNode.gain.setValueAtTime(inst.sustain * volume, stopTime);
+    gainNode.gain.linearRampToValueAtTime(0, stopTime + inst.release);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(offlineMasterGain);
+
+    oscillator.start(time);
+    oscillator.stop(stopTime + inst.release);
+  });
+
+  try {
+    const renderedBuffer = await offlineCtx.startRendering();
+    const wavBlob = audioBufferToWav(renderedBuffer);
+    const url = URL.createObjectURL(wavBlob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'generated_audio.wav';
+    downloadLink.click();
+
+    URL.revokeObjectURL(url);
+    statusElement.textContent = 'Audio downloaded successfully!';
+  } catch (err) {
+    console.error(err);
+    statusElement.textContent = 'Error rendering audio.';
+  }
+});
+
 document.getElementById('download-midi').addEventListener('click', () => {
+
   const midiText = document.getElementById('midi-text').value;
   const blob = new Blob([midiText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
