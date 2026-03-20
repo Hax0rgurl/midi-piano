@@ -65,6 +65,7 @@
       </select>
       <button id="record">Record</button>
       <button id="download-midi">Download MIDI File</button>
+      <button id="download-wav">Download WAV File</button>
       <div id="volume-control">
         <input type="range" id="volume-slider" min="0" max="100" value="50">
         <span id="volume-label">Volume: 50%</span>
@@ -331,6 +332,113 @@ document.getElementById('download-midi').addEventListener('click', () => {
   newWindow.document.body.appendChild(downloadLink);
   
   URL.revokeObjectURL(url);
+});
+
+function audioBufferToWav(buffer) {
+  const numOfChan = buffer.numberOfChannels,
+        length = buffer.length * numOfChan * 2 + 44,
+        bufferData = new ArrayBuffer(length),
+        view = new DataView(bufferData),
+        channels = [],
+        sampleRate = buffer.sampleRate;
+  let sample = 0,
+      offset = 0,
+      pos = 0;
+
+  // write WAVE header
+  function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+  function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+  setUint32(0x46464952); // "RIFF"
+  setUint32(length - 8); // file length - 8
+  setUint32(0x45564157); // "WAVE"
+
+  setUint32(0x20746d66); // "fmt " chunk
+  setUint32(16); // length = 16
+  setUint16(1); // PCM (uncompressed)
+  setUint16(numOfChan);
+  setUint32(sampleRate);
+  setUint32(sampleRate * 2 * numOfChan); // avg. bytes/sec
+  setUint16(numOfChan * 2); // block-align
+  setUint16(16); // 16-bit
+
+  setUint32(0x61746164); // "data" - chunk
+  setUint32(length - pos - 4); // chunk length
+
+  // write interleaved data
+  for (let i = 0; i < buffer.numberOfChannels; i++)
+    channels.push(buffer.getChannelData(i));
+
+  while (pos < length) {
+    for (let i = 0; i < numOfChan; i++) {
+      sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
+      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
+      view.setInt16(pos, sample, true); // write 16-bit sample
+      pos += 2;
+    }
+    offset++;
+  }
+  return bufferData;
+}
+
+document.getElementById('download-wav').addEventListener('click', async () => {
+  const midiText = document.getElementById('midi-text').value;
+  if (!midiText.trim()) return;
+
+  const seq = parseMidiText(midiText);
+  if (seq.length === 0) return;
+
+  const statusElement = document.getElementById('status');
+  statusElement.textContent = 'Generating WAV file...';
+
+  const maxTime = Math.max(...seq.map(n => n.time + n.duration)) + 2;
+  const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100 * maxTime, 44100);
+
+  seq.forEach(noteData => {
+    const note = noteData.note;
+    const fullNote = note.length > 1 && !isNaN(note.slice(-1)) ? note : `${note}${currentOctave}`;
+    const freq = baseNoteFrequencies[fullNote];
+    if (!freq) return;
+
+    const oscillator = offlineCtx.createOscillator();
+    const gainNode = offlineCtx.createGain();
+
+    oscillator.type = instruments[currentInstrument].type;
+    oscillator.frequency.setValueAtTime(freq, noteData.time);
+
+    gainNode.gain.setValueAtTime(0, noteData.time);
+    gainNode.gain.linearRampToValueAtTime(noteData.volume, noteData.time + instruments[currentInstrument].attack);
+    gainNode.gain.linearRampToValueAtTime(instruments[currentInstrument].sustain * noteData.volume, noteData.time + instruments[currentInstrument].attack + instruments[currentInstrument].decay);
+
+    gainNode.gain.setValueAtTime(gainNode.gain.value, noteData.time + noteData.duration);
+    gainNode.gain.linearRampToValueAtTime(0, noteData.time + noteData.duration + instruments[currentInstrument].release);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(offlineCtx.destination);
+
+    oscillator.start(noteData.time);
+    oscillator.stop(noteData.time + noteData.duration + instruments[currentInstrument].release);
+  });
+
+  try {
+    const renderedBuffer = await offlineCtx.startRendering();
+    const wavData = audioBufferToWav(renderedBuffer);
+    const blob = new Blob([wavData], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'generated_audio.wav';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+
+    statusElement.textContent = 'WAV download complete!';
+  } catch (err) {
+    console.error(err);
+    statusElement.textContent = 'Error generating WAV.';
+  }
 });
 
 document.getElementById('generate-midi').addEventListener('click', () => {
