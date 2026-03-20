@@ -1,0 +1,27 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "https://hax0rgurl.github.io/midi-piano/",
+  "main": "utils.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hax0rgurl/midi-piano.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Hax0rgurl/midi-piano/issues"
+  },
+  "homepage": "https://github.com/Hax0rgurl/midi-piano#readme",
+  "devDependencies": {
+    "jest": "^30.3.0"
+  }
+}
