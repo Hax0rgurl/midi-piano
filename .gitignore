@@ -1,0 +1,10 @@
+node_modules/
+npm-debug.log
+.DS_Store
+package-lock.json
+package.json
+eslint.config.js
+run_test.py
+fix-html.js
+test-wav.js
+update-html.js
