@@ -244,10 +244,24 @@ function displayRecordedNotes() {
 }
 
 function parseMidiText(midiText) {
-  return midiText.trim().split('\n').map(line => {
-    const [note, time, duration, volume, type] = line.split(',');
-    return { note, time: parseFloat(time), duration: parseFloat(duration), volume: parseFloat(volume), type };
-  });
+  return midiText.trim().split('\n')
+    .filter(line => line.trim() !== '')
+    .map(line => {
+      const parts = line.split(',');
+      if (parts.length !== 5) {
+        throw new Error("Invalid MIDI line: " + line);
+      }
+      const [note, timeStr, durationStr, volumeStr, type] = parts;
+      const time = parseFloat(timeStr);
+      const duration = parseFloat(durationStr);
+      const volume = parseFloat(volumeStr);
+
+      if (isNaN(time) || isNaN(duration) || isNaN(volume)) {
+        throw new Error("Invalid numeric values in MIDI line: " + line);
+      }
+
+      return { note: note.trim(), time, duration, volume, type: type.trim() };
+    });
 }
 
 document.getElementById('play').addEventListener('click', () => {
