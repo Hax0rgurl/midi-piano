@@ -318,19 +318,18 @@ document.getElementById('download-midi').addEventListener('click', () => {
   const blob = new Blob([midiText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   
-  // Open a new window with the MIDI content
-  const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + midiText + '</pre>');
-  newWindow.document.title = 'Generated MIDI';
-  
-  // Create a download link in the new window
-  const downloadLink = newWindow.document.createElement('a');
+  const downloadLink = document.createElement('a');
+  downloadLink.style.display = 'none';
   downloadLink.href = url;
   downloadLink.download = 'generated_midi.mid';
-  downloadLink.textContent = 'Download MIDI File';
-  newWindow.document.body.appendChild(downloadLink);
   
-  URL.revokeObjectURL(url);
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+
+  setTimeout(() => {
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+  }, 100);
 });
 
 document.getElementById('generate-midi').addEventListener('click', () => {
@@ -350,44 +349,93 @@ document.getElementById('generate-midi').addEventListener('click', () => {
   }, 3000); // Simulating a 3-second delay for generation
 });
 
+const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+function getScale(root, isMinor) {
+  const rootIndex = NOTES.indexOf(root);
+  if (rootIndex === -1) return ["C", "D", "E", "F", "G", "A", "B"];
+  const intervals = isMinor ? [2, 1, 2, 2, 1, 2, 2] : [2, 2, 1, 2, 2, 2, 1];
+  const scale = [];
+  let currentIndex = rootIndex;
+  for (let i = 0; i < 7; i++) {
+    scale.push(NOTES[currentIndex]);
+    currentIndex = (currentIndex + intervals[i]) % 12;
+  }
+  return scale;
+}
+
 function generateFullSong() {
-  const songLength = Math.random() * 30 + 90; // 90-120 seconds
   const bpm = Math.floor(Math.random() * 40 + 80); // 80-120 BPM
   const beatDuration = 60 / bpm;
-  const isMinor = Math.random() < 0.5;
+  let isMinor = Math.random() < 0.5;
+  let currentRoot = NOTES[Math.floor(Math.random() * NOTES.length)];
+  let scale = getScale(currentRoot, isMinor);
   
-  const scale = isMinor ? ['C', 'D', 'D#', 'F', 'G', 'G#', 'A#'] : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-  const chords = [
-    [0, 2, 4], // I
-    [5, 0, 2], // VI
-    [3, 5, 0], // IV
-    [4, 6, 1]  // V
+  const chords = {
+    I: [0, 2, 4],
+    ii: [1, 3, 5],
+    IV: [3, 5, 0],
+    V: [4, 6, 1],
+    vi: [5, 0, 2]
+  };
+
+  const sections = [
+    { name: 'Intro', progressions: [['I', 'IV', 'I', 'V']], loops: 1 },
+    { name: 'Verse', progressions: [['I', 'vi', 'IV', 'V'], ['I', 'IV', 'I', 'V']], loops: 2 },
+    { name: 'Chorus', progressions: [['I', 'V', 'vi', 'IV']], loops: 2 },
+    { name: 'Verse', progressions: [['I', 'vi', 'IV', 'V'], ['I', 'IV', 'I', 'V']], loops: 2 },
+    { name: 'Bridge', progressions: [['vi', 'IV', 'I', 'V'], ['ii', 'V', 'I', 'vi']], loops: 1 },
+    { name: 'Chorus', progressions: [['I', 'V', 'vi', 'IV']], loops: 2 },
+    { name: 'Outro', progressions: [['I', 'IV', 'I', 'I']], loops: 1 }
   ];
   
   let song = '';
   let currentTime = 0;
   
-  while (currentTime < songLength) {
-    const chordProgression = shuffleArray([0, 1, 2, 3]);
-    
-    for (const chordIndex of chordProgression) {
-      const chord = chords[chordIndex];
+  for (const section of sections) {
+    if (section.name === 'Bridge') {
+        // Key change!
+        let newRootIndex = (NOTES.indexOf(currentRoot) + (Math.random() < 0.5 ? 2 : 5)) % 12;
+        currentRoot = NOTES[newRootIndex];
+        isMinor = !isMinor; // change tonality too for dramatic effect
+        scale = getScale(currentRoot, isMinor);
+    }
+
+    for (let l = 0; l < section.loops; l++) {
+      const progression = section.progressions[Math.floor(Math.random() * section.progressions.length)];
       
-      // Main melody
-      const melodyNote = scale[Math.floor(Math.random() * scale.length)] + '4';
-      song += `${melodyNote},${currentTime.toFixed(2)},${beatDuration.toFixed(2)},1.0,main\n`;
-      
-      // Chord
-      for (const note of chord) {
-        const chordNote = scale[note] + '3';
-        song += `${chordNote},${currentTime.toFixed(2)},${(beatDuration * 4).toFixed(2)},0.6,harmony\n`;
+      for (const chordName of progression) {
+        const chordParams = chords[chordName];
+        const measureDuration = beatDuration * 4;
+
+        // Bass (plays once per measure)
+        const bassNote = scale[chordParams[0]] + '2';
+        song += `${bassNote},${currentTime.toFixed(2)},${measureDuration.toFixed(2)},0.8,bass\n`;
+
+        // Harmony chords (plays once per measure)
+        for (const noteIdx of chordParams) {
+          const chordNote = scale[noteIdx] + '3';
+          song += `${chordNote},${currentTime.toFixed(2)},${measureDuration.toFixed(2)},0.6,harmony\n`;
+        }
+
+        // Lead Melody (4 beats per measure)
+        for(let beat = 0; beat < 4; beat++) {
+            // Give it some rhythm, don't play on every beat necessarily
+            if (Math.random() > 0.2) {
+                let melodyNoteIndex;
+                if (Math.random() > 0.5) {
+                    melodyNoteIndex = chordParams[Math.floor(Math.random() * chordParams.length)]; // Play a chord tone
+                } else {
+                    melodyNoteIndex = Math.floor(Math.random() * scale.length); // Play any scale tone
+                }
+                const melodyNote = scale[melodyNoteIndex] + '4';
+                const noteTime = currentTime + (beat * beatDuration);
+                song += `${melodyNote},${noteTime.toFixed(2)},${beatDuration.toFixed(2)},1.0,main\n`;
+            }
+        }
+
+        currentTime += measureDuration;
       }
-      
-      // Bass
-      const bassNote = scale[chord[0]] + '2';
-      song += `${bassNote},${currentTime.toFixed(2)},${(beatDuration * 4).toFixed(2)},0.8,bass\n`;
-      
-      currentTime += beatDuration * 4;
     }
   }
   
