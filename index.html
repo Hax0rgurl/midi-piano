@@ -103,6 +103,7 @@ let isRecording = false;
 let recordedNotes = [];
 let recordStartTime;
 let masterGainNode = audioContext.createGain();
+let pianoKeysCache = {};
 masterGainNode.connect(audioContext.destination);
 
 const instruments = {
@@ -287,13 +288,20 @@ function playNextNote() {
   setTimeout(playNextNote, nextNoteTime);
 }
 
+function getKeyElement(note) {
+  if (!pianoKeysCache[note]) {
+    pianoKeysCache[note] = document.querySelector(`[data-note="${note}"]`);
+  }
+  return pianoKeysCache[note];
+}
+
 function highlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = getKeyElement(note);
   if (key) key.classList.add('highlight');
 }
 
 function unhighlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = getKeyElement(note);
   if (key) key.classList.remove('highlight');
 }
 
@@ -404,6 +412,14 @@ function shuffleArray(array) {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
+  // Populate pianoKeysCache
+  document.querySelectorAll('.white-key, .black-key').forEach(key => {
+    const note = key.dataset.note;
+    if (note && !pianoKeysCache[note]) {
+      pianoKeysCache[note] = key;
+    }
+  });
+
   // Set initial volume
   const volumeSlider = document.getElementById('volume-slider');
   masterGainNode.gain.setValueAtTime(volumeSlider.value / 100, audioContext.currentTime);
