@@ -320,7 +320,11 @@ document.getElementById('download-midi').addEventListener('click', () => {
   
   // Open a new window with the MIDI content
   const newWindow = window.open('', '_blank');
-  newWindow.document.write('<pre>' + midiText + '</pre>');
+
+  const preElement = newWindow.document.createElement('pre');
+  preElement.textContent = midiText;
+  newWindow.document.body.appendChild(preElement);
+
   newWindow.document.title = 'Generated MIDI';
   
   // Create a download link in the new window
