@@ -91,7 +91,7 @@
 //things to fnish: create midi with timing, key changes, harmonies, bass, lead melody
 //create functional download button(must remain on the page. open dialogue to download,
 //dowload as wav function and download button.
-  
+
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let currentInstrument = 'piano';
 let currentOctave = 4;
@@ -129,19 +129,19 @@ function playNote(note, volume = 1.0) {
   const fullNote = `${note}${currentOctave}`;
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
-  
+
   oscillator.type = instruments[currentInstrument].type;
   oscillator.frequency.setValueAtTime(baseNoteFrequencies[fullNote], audioContext.currentTime);
-  
+
   gainNode.gain.setValueAtTime(0, audioContext.currentTime);
   gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + instruments[currentInstrument].attack);
   gainNode.gain.linearRampToValueAtTime(instruments[currentInstrument].sustain * volume, audioContext.currentTime + instruments[currentInstrument].attack + instruments[currentInstrument].decay);
-  
+
   oscillator.connect(gainNode);
   gainNode.connect(masterGainNode);
-  
+
   oscillator.start();
-  
+
   return { oscillator, gainNode };
 }
 
@@ -171,7 +171,7 @@ document.querySelectorAll('.white-key, .black-key').forEach(key => {
     key.classList.add('active');
     const noteObj = playNote(note);
     key.noteObj = noteObj;
-    
+
     if (isRecording) {
       const time = audioContext.currentTime - recordStartTime;
       recordedNotes.push({ note: `${note}${currentOctave}`, time, duration: 0, volume: 1.0, type: 'main' });
@@ -183,7 +183,7 @@ document.querySelectorAll('.white-key, .black-key').forEach(key => {
     if (key.noteObj) {
       stopNote(key.noteObj);
       key.noteObj = null;
-      
+
       if (isRecording) {
         const lastNote = recordedNotes[recordedNotes.length - 1];
         if (lastNote && lastNote.duration === 0) {
@@ -262,7 +262,7 @@ document.getElementById('play').addEventListener('click', () => {
     const midiText = document.getElementById('midi-text').value;
     midiSequence = parseMidiText(midiText);
   }
-  
+
   if (midiSequence.length > 0) {
     isPlaying = true;
     currentNoteIndex = 0;
@@ -276,38 +276,38 @@ function playNextNote() {
     isPlaying = false;
     return;
   }
-  
+
   const { note, time, duration, volume, type } = midiSequence[currentNoteIndex];
   const noteObj = playNote(note.slice(0, -1), volume);
-  
+
   highlightKey(note.slice(0, -1));
   highlightMidiLine(currentNoteIndex);
-  
+
   setTimeout(() => {
     stopNote(noteObj);
     unhighlightKey(note.slice(0, -1));
   }, duration * 1000);
-  
+
   currentNoteIndex++;
-  
+
   const nextNoteTime = time * 1000;
   setTimeout(playNextNote, nextNoteTime);
 }
 
 function highlightKey(note) {
-  const key = pianoKeysCache[note];
+  const key = document.querySelector(`[data-note="${note}"]`);
   if (key) key.classList.add('highlight');
 }
 
 function unhighlightKey(note) {
-  const key = pianoKeysCache[note];
+  const key = document.querySelector(`[data-note="${note}"]`);
   if (key) key.classList.remove('highlight');
 }
 
 function highlightMidiLine(index) {
   const midiTextArea = document.getElementById('midi-text');
   const lines = midiTextArea.value.split('\n');
-  const highlightedLines = lines.map((line, i) => 
+  const highlightedLines = lines.map((line, i) =>
     i === index ? `<span class="midi-line-highlight">${line}</span>` : line
   );
   midiTextArea.innerHTML = highlightedLines.join('\n');
@@ -324,33 +324,33 @@ document.getElementById('download-midi').addEventListener('click', () => {
   const midiText = document.getElementById('midi-text').value;
   const blob = new Blob([midiText], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
-  
+
   // Open a new window with the MIDI content
   const newWindow = window.open('', '_blank');
   newWindow.document.write('<pre>' + midiText + '</pre>');
   newWindow.document.title = 'Generated MIDI';
-  
+
   // Create a download link in the new window
   const downloadLink = newWindow.document.createElement('a');
   downloadLink.href = url;
   downloadLink.download = 'generated_midi.mid';
   downloadLink.textContent = 'Download MIDI File';
   newWindow.document.body.appendChild(downloadLink);
-  
+
   URL.revokeObjectURL(url);
 });
 
 document.getElementById('generate-midi').addEventListener('click', () => {
   const midiInput = document.getElementById('midi-input').value;
   const statusElement = document.getElementById('status');
-  
+
   statusElement.textContent = 'Generating full song...';
-  
+
   // Simulating an API call to generate a full song
   setTimeout(() => {
     // This is a placeholder for the actual song generation
     const generatedSong = generateFullSong();
-    
+
     document.getElementById('midi-text').value = generatedSong;
     midiSequence = parseMidiText(generatedSong);
     statusElement.textContent = 'Full song generated successfully!';
@@ -362,7 +362,7 @@ function generateFullSong() {
   const bpm = Math.floor(Math.random() * 40 + 80); // 80-120 BPM
   const beatDuration = 60 / bpm;
   const isMinor = Math.random() < 0.5;
-  
+
   const scale = isMinor ? ['C', 'D', 'D#', 'F', 'G', 'G#', 'A#'] : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
   const chords = [
     [0, 2, 4], // I
@@ -370,34 +370,34 @@ function generateFullSong() {
     [3, 5, 0], // IV
     [4, 6, 1]  // V
   ];
-  
+
   let song = '';
   let currentTime = 0;
-  
+
   while (currentTime < songLength) {
     const chordProgression = shuffleArray([0, 1, 2, 3]);
-    
+
     for (const chordIndex of chordProgression) {
       const chord = chords[chordIndex];
-      
+
       // Main melody
       const melodyNote = scale[Math.floor(Math.random() * scale.length)] + '4';
       song += `${melodyNote},${currentTime.toFixed(2)},${beatDuration.toFixed(2)},1.0,main\n`;
-      
+
       // Chord
       for (const note of chord) {
         const chordNote = scale[note] + '3';
         song += `${chordNote},${currentTime.toFixed(2)},${(beatDuration * 4).toFixed(2)},0.6,harmony\n`;
       }
-      
+
       // Bass
       const bassNote = scale[chord[0]] + '2';
       song += `${bassNote},${currentTime.toFixed(2)},${(beatDuration * 4).toFixed(2)},0.8,bass\n`;
-      
+
       currentTime += beatDuration * 4;
     }
   }
-  
+
   return song.trim();
 }
 
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set initial volume
   const volumeSlider = document.getElementById('volume-slider');
   masterGainNode.gain.setValueAtTime(volumeSlider.value / 100, audioContext.currentTime);
-  
+
   // Enable audio context on user interaction
   document.body.addEventListener('click', () => {
     if (audioContext.state === 'suspended') {
