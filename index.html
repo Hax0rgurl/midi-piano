@@ -244,9 +244,22 @@ function displayRecordedNotes() {
 }
 
 function parseMidiText(midiText) {
+  if (!midiText || midiText.trim() === '') return [];
   return midiText.trim().split('\n').map(line => {
-    const [note, time, duration, volume, type] = line.split(',');
-    return { note, time: parseFloat(time), duration: parseFloat(duration), volume: parseFloat(volume), type };
+    const parts = line.split(',');
+    if (parts.length !== 5) {
+      throw new Error('Invalid MIDI text format: expected 5 columns');
+    }
+    const [note, time, duration, volume, type] = parts;
+    const parsedTime = parseFloat(time);
+    const parsedDuration = parseFloat(duration);
+    const parsedVolume = parseFloat(volume);
+
+    if (isNaN(parsedTime)) throw new Error('Invalid MIDI text format: time must be a number');
+    if (isNaN(parsedDuration)) throw new Error('Invalid MIDI text format: duration must be a number');
+    if (isNaN(parsedVolume)) throw new Error('Invalid MIDI text format: volume must be a number');
+
+    return { note, time: parsedTime, duration: parsedDuration, volume: parsedVolume, type };
   });
 }
 
