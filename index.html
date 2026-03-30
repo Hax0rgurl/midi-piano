@@ -271,14 +271,15 @@ function playNextNote() {
   }
   
   const { note, time, duration, volume, type } = midiSequence[currentNoteIndex];
-  const noteObj = playNote(note.slice(0, -1), volume);
+  const baseNote = note.slice(0, -1);
+  const noteObj = playNote(baseNote, volume);
   
-  highlightKey(note.slice(0, -1));
+  highlightKey(baseNote);
   highlightMidiLine(currentNoteIndex);
   
   setTimeout(() => {
     stopNote(noteObj);
-    unhighlightKey(note.slice(0, -1));
+    unhighlightKey(baseNote);
   }, duration * 1000);
   
   currentNoteIndex++;
