@@ -1,49 +1,9 @@
-<html><head><base href="https://musicworld.websim/"><title>AI MIDI Generator with Chords - MusicWorld</title><style>body{background:#000000;color:#00ff00;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;font-family:'Roboto',sans-serif;padding:20px}.container{width:100%;max-width:1200px}.piano{background:#111111;padding:20px;border-radius:15px;box-shadow:0 10px 30px rgba(0,255,0,0.3);margin-bottom:30px;overflow-x:auto}.keys{display:flex;position:relative;width:4400px}.white-key{width:50px;height:180px;background:#222222;border:1px solid #00ff00;border-radius:0 0 8px 8px;cursor:pointer;transition:all 0.3s ease}.black-key{width:30px;height:110px;background:#000000;position:absolute;cursor:pointer;z-index:1;border-radius:0 0 5px 5px;transition:all 0.3s ease;border:1px solid #00ff00}.white-key:active,.black-key:active,.white-key.active,.black-key.active{transform:scale(0.98);box-shadow:0 2px 10px rgba(0,255,0,0.5)}.white-key:active,.white-key.active{background:#00ff00}.black-key:active,.black-key.active{background:#00ff00}.controls{background:rgba(0,0,0,0.8);padding:20px;border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);margin-bottom:30px;backdrop-filter:blur(10px);border:1px solid #00ff00}select,button,input,textarea{background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px 15px;font-size:16px;margin:5px;border-radius:8px;transition:all 0.3s ease}select:focus,input:focus,textarea:focus{outline:none;box-shadow:0 0 0 2px #00ff00}button{background:#000000;color:#00ff00;font-weight:bold;cursor:pointer;transition:all 0.3s ease}button:hover{background:#003300;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,255,0,0.4)}#status{margin-top:15px;font-style:italic;color:#00ff00}#midi-container{background:rgba(0,0,0,0.8);border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);padding:20px;backdrop-filter:blur(10px);border:1px solid #00ff00}#midi-input{width:calc(100% - 30px);margin-bottom:15px;background:#000000;color:#00ff00;resize:vertical}#playback-controls{display:flex;justify-content:space-between;margin-top:15px}#midi-text{width:100%;height:200px;margin-top:20px;resize:vertical;font-family:'Courier New',monospace;background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px;border-radius:8px}.recording{background-color:#ff0000 !important;color:#000000 !important}#volume-control{display:flex;align-items:center;margin-top:10px}#volume-slider{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#00ff00;outline:none;opacity:0.7;transition:opacity .2s}#volume-slider:hover{opacity:1}#volume-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-label{margin-left:10px;font-size:14px}.highlight{background-color:rgba(0,255,0,0.5) !important}.midi-line-highlight{background-color:#003300}.white-key:focus-visible,.black-key:focus-visible{outline:2px solid #ffffff;outline-offset:-2px;z-index:10}</style></head><body>
+<html><head><base href="https://musicworld.websim/"><title>AI MIDI Generator with Chords - MusicWorld</title><style>body{background:#000000;color:#00ff00;display:flex;flex-direction:column;align-items:center;min-height:100vh;margin:0;font-family:'Roboto',sans-serif;padding:20px}.container{width:100%;max-width:1200px}.piano{background:#111111;padding:20px;border-radius:15px;box-shadow:0 10px 30px rgba(0,255,0,0.3);margin-bottom:30px;overflow-x:auto}.keys{display:flex;position:relative;width:max-content}.white-key{width:50px;height:180px;flex-shrink:0;box-sizing:border-box;background:#222222;border:1px solid #00ff00;border-radius:0 0 8px 8px;cursor:pointer;transition:all 0.3s ease}.black-key{width:30px;height:110px;box-sizing:border-box;background:#000000;position:absolute;cursor:pointer;z-index:1;border-radius:0 0 5px 5px;transition:all 0.3s ease;border:1px solid #00ff00}.white-key:active,.black-key:active,.white-key.active,.black-key.active{transform:scale(0.98);box-shadow:0 2px 10px rgba(0,255,0,0.5)}.white-key:active,.white-key.active{background:#00ff00}.black-key:active,.black-key.active{background:#00ff00}.controls{background:rgba(0,0,0,0.8);padding:20px;border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);margin-bottom:30px;backdrop-filter:blur(10px);border:1px solid #00ff00}select,button,input,textarea{background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px 15px;font-size:16px;margin:5px;border-radius:8px;transition:all 0.3s ease}select:focus,input:focus,textarea:focus{outline:none;box-shadow:0 0 0 2px #00ff00}button{background:#000000;color:#00ff00;font-weight:bold;cursor:pointer;transition:all 0.3s ease}button:hover{background:#003300;transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,255,0,0.4)}#status{margin-top:15px;font-style:italic;color:#00ff00}#midi-container{background:rgba(0,0,0,0.8);border-radius:15px;box-shadow:0 5px 15px rgba(0,255,0,0.3);padding:20px;backdrop-filter:blur(10px);border:1px solid #00ff00}#midi-input{width:calc(100% - 30px);margin-bottom:15px;background:#000000;color:#00ff00;resize:vertical}#playback-controls{display:flex;justify-content:space-between;margin-top:15px}#midi-text{width:100%;height:200px;margin-top:20px;resize:vertical;font-family:'Courier New',monospace;background:#000000;color:#00ff00;border:1px solid #00ff00;padding:10px;border-radius:8px}.recording{background-color:#ff0000 !important;color:#000000 !important}#volume-control{display:flex;align-items:center;margin-top:10px}#volume-slider{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#00ff00;outline:none;opacity:0.7;transition:opacity .2s}#volume-slider:hover{opacity:1}#volume-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#00ff00;cursor:pointer}#volume-label{margin-left:10px;font-size:14px}.highlight{background-color:rgba(0,255,0,0.5) !important}.midi-line-highlight{background-color:#003300}.white-key:focus-visible,.black-key:focus-visible{outline:2px solid #ffffff;outline-offset:-2px;z-index:10}</style></head><body>
   <div class="container">
     <div class="piano">
-  <div class="keys">
-    <!-- White keys -->
-    <div class="white-key" data-note="C"></div>
-    <div class="white-key" data-note="D"></div>
-    <div class="white-key" data-note="E"></div>
-    <div class="white-key" data-note="F"></div>
-    <div class="white-key" data-note="G"></div>
-    <div class="white-key" data-note="A"></div>
-    <div class="white-key" data-note="B"></div>
-    <div class="white-key" data-note="C"></div>
-    <div class="white-key" data-note="D"></div>
-    <div class="white-key" data-note="E"></div>
-    <div class="white-key" data-note="F"></div>
-    <div class="white-key" data-note="G"></div>
-    <div class="white-key" data-note="A"></div>
-    <div class="white-key" data-note="B"></div>
-    <div class="white-key" data-note="C"></div>
-    <div class="white-key" data-note="D"></div>
-    <div class="white-key" data-note="E"></div>
-    <div class="white-key" data-note="F"></div>
-    <div class="white-key" data-note="G"></div>
-    <div class="white-key" data-note="A"></div>
-    <div class="white-key" data-note="B"></div>
-    <div class="white-key" data-note="C"></div>
-
-    <!-- Black keys -->
-    <div class="black-key" data-note="C#" style="left: 35px;"></div>
-    <div class="black-key" data-note="D#" style="left: 85px;"></div>
-    <div class="black-key" data-note="F#" style="left: 185px;"></div>
-    <div class="black-key" data-note="G#" style="left: 235px;"></div>
-    <div class="black-key" data-note="A#" style="left: 285px;"></div>
-    <div class="black-key" data-note="C#" style="left: 385px;"></div>
-    <div class="black-key" data-note="D#" style="left: 435px;"></div>
-    <div class="black-key" data-note="F#" style="left: 535px;"></div>
-    <div class="black-key" data-note="G#" style="left: 585px;"></div>
-    <div class="black-key" data-note="A#" style="left: 635px;"></div>
-    <div class="black-key" data-note="C#" style="left: 735px;"></div>
-    <div class="black-key" data-note="D#" style="left: 785px;"></div>
-    <div class="black-key" data-note="F#" style="left: 885px;"></div>
-    <div class="black-key" data-note="G#" style="left: 935px;"></div>
-    <div class="black-key" data-note="A#" style="left: 985px;"></div>
-  </div>
-</div>
+      <div class="keys">
+      </div>
+    </div>
 
     <div class="controls">
       <select id="instrument-select">
@@ -52,16 +12,6 @@
         <option value="guitar">Guitar</option>
         <option value="synth">Synth</option>
         <option value="strings">Strings</option>
-      </select>
-      <select id="octave-select">
-        <option value="0">Octave 0</option>
-        <option value="1">Octave 1</option>
-        <option value="2">Octave 2</option>
-        <option value="3">Octave 3</option>
-        <option value="4" selected="">Octave 4</option>
-        <option value="5">Octave 5</option>
-        <option value="6">Octave 6</option>
-        <option value="7">Octave 7</option>
       </select>
       <button id="record">Record</button>
       <button id="download-midi">Download MIDI File</button>
@@ -92,9 +42,46 @@
 //create functional download button(must remain on the page. open dialogue to download,
 //dowload as wav function and download button.
   
+
+function renderPiano() {
+  const keysContainer = document.querySelector('.keys');
+  if (!keysContainer) return;
+
+  const octaves = 9;
+  let html = '';
+
+  for (let octave = 0; octave < octaves; octave++) {
+    const isLastOctave = (octave === 8);
+    const notesInOctave = isLastOctave ? ['C'] : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+
+    notesInOctave.forEach(note => {
+      html += `<div class="white-key" data-note="${note}${octave}"></div>`;
+    });
+
+    if (!isLastOctave) {
+      const blackNotes = [
+        { note: 'C#', offset: 35 },
+        { note: 'D#', offset: 85 },
+        { note: 'F#', offset: 185 },
+        { note: 'G#', offset: 235 },
+        { note: 'A#', offset: 285 }
+      ];
+
+      const baseOffset = octave * 350;
+
+      blackNotes.forEach(bn => {
+        const leftPos = baseOffset + bn.offset;
+        html += `<div class="black-key" data-note="${bn.note}${octave}" style="left: ${leftPos}px;"></div>`;
+      });
+    }
+  }
+
+  keysContainer.innerHTML = html;
+}
+renderPiano();
+
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let currentInstrument = 'piano';
-let currentOctave = 4;
 let midiSequence = null;
 let isPlaying = false;
 let currentNoteIndex = 0;
@@ -126,7 +113,7 @@ const baseNoteFrequencies = {
 };
 
 function playNote(note, volume = 1.0) {
-  const fullNote = `${note}${currentOctave}`;
+  const fullNote = note;
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
@@ -167,7 +154,7 @@ document.querySelectorAll('.white-key, .black-key').forEach(key => {
     
     if (isRecording) {
       const time = audioContext.currentTime - recordStartTime;
-      recordedNotes.push({ note: `${note}${currentOctave}`, time, duration: 0, volume: 1.0, type: 'main' });
+      recordedNotes.push({ note: note, time, duration: 0, volume: 1.0, type: 'main' });
     }
   };
 
@@ -210,9 +197,6 @@ document.getElementById('instrument-select').addEventListener('change', (e) => {
   currentInstrument = e.target.value;
 });
 
-document.getElementById('octave-select').addEventListener('change', (e) => {
-  currentOctave = parseInt(e.target.value);
-});
 
 document.getElementById('volume-slider').addEventListener('input', (e) => {
   const volume = e.target.value / 100;
@@ -271,14 +255,14 @@ function playNextNote() {
   }
   
   const { note, time, duration, volume, type } = midiSequence[currentNoteIndex];
-  const noteObj = playNote(note.slice(0, -1), volume);
+  const noteObj = playNote(note, volume);
   
-  highlightKey(note.slice(0, -1));
+  highlightKey(note);
   highlightMidiLine(currentNoteIndex);
   
   setTimeout(() => {
     stopNote(noteObj);
-    unhighlightKey(note.slice(0, -1));
+    unhighlightKey(note);
   }, duration * 1000);
   
   currentNoteIndex++;
