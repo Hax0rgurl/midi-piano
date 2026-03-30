@@ -299,11 +299,26 @@ function unhighlightKey(note) {
 
 function highlightMidiLine(index) {
   const midiTextArea = document.getElementById('midi-text');
-  const lines = midiTextArea.value.split('\n');
-  const highlightedLines = lines.map((line, i) => 
-    i === index ? `<span class="midi-line-highlight">${line}</span>` : line
-  );
-  midiTextArea.innerHTML = highlightedLines.join('\n');
+  const text = midiTextArea.value;
+
+  let start = 0;
+  let currentLine = 0;
+
+  while (currentLine < index && start < text.length) {
+    const nextNewline = text.indexOf('\n', start);
+    if (nextNewline === -1) {
+      start = text.length;
+      break;
+    }
+    start = nextNewline + 1;
+    currentLine++;
+  }
+
+  let end = text.indexOf('\n', start);
+  if (end === -1) end = text.length;
+
+  midiTextArea.focus();
+  midiTextArea.setSelectionRange(start, end);
 }
 
 document.getElementById('stop').addEventListener('click', () => {
