@@ -105,6 +105,9 @@ let recordStartTime;
 let masterGainNode = audioContext.createGain();
 masterGainNode.connect(audioContext.destination);
 
+let allKeys = [];
+const pianoKeysCache = new Map();
+
 const instruments = {
   piano: { type: 'triangle', attack: 0.02, decay: 0.1, sustain: 0.3, release: 0.1 },
   organ: { type: 'sine', attack: 0.02, decay: 0.3, sustain: 0.8, release: 0.1 },
@@ -288,12 +291,12 @@ function playNextNote() {
 }
 
 function highlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = pianoKeysCache.get(String(note));
   if (key) key.classList.add('highlight');
 }
 
 function unhighlightKey(note) {
-  const key = document.querySelector(`[data-note="${note}"]`);
+  const key = pianoKeysCache.get(String(note));
   if (key) key.classList.remove('highlight');
 }
 
@@ -308,7 +311,7 @@ function highlightMidiLine(index) {
 
 document.getElementById('stop').addEventListener('click', () => {
   isPlaying = false;
-  document.querySelectorAll('.white-key, .black-key').forEach(key => {
+  allKeys.forEach(key => {
     key.classList.remove('highlight');
   });
 });
@@ -404,6 +407,16 @@ function shuffleArray(array) {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
+
+  // Cache piano keys for performance
+  allKeys = document.querySelectorAll('.white-key, .black-key');
+  allKeys.forEach(key => {
+    const note = key.getAttribute('data-note');
+    if (!pianoKeysCache.has(note)) {
+      pianoKeysCache.set(note, key);
+    }
+  });
+
   // Set initial volume
   const volumeSlider = document.getElementById('volume-slider');
   masterGainNode.gain.setValueAtTime(volumeSlider.value / 100, audioContext.currentTime);
